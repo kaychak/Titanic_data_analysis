@@ -10,6 +10,11 @@ import joblib
 from datetime import datetime
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
+import tensorflow as tf
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, BatchNormalization
+from keras.callbacks import EarlyStopping
+from keras.layers import BatchNormalization
 
 class TitanicModelTrainer:
     def __init__(self, data_path):
@@ -28,6 +33,17 @@ class TitanicModelTrainer:
             stratify=self.y,       # Maintain same ratio of survived/died in both splits
             random_state=42        # For reproducibility
         )
+
+    def _compute_class_weights(self):
+        """Compute class weights for imbalanced dataset"""
+        from sklearn.utils.class_weight import compute_class_weight
+        classes = np.unique(self.y_train)
+        weights = compute_class_weight(
+            class_weight='balanced',
+            classes=classes,
+            y=self.y_train
+        )
+        return dict(zip(classes, weights))
 
     def train_logistic_regression(self):
         # Initialize model with L2 regularization and balanced class weights
@@ -435,10 +451,128 @@ Classification Report:
         joblib.dump(model_info, f'xgboost_{timestamp}_{test_score:.4f}.joblib')
         
         return final_model
+    
+    def train_deep_learning(self):
+        # Initialize model with better architecture
+        model = Sequential([
+            Dense(256, activation='relu', input_shape=(self.X_train.shape[1],)),
+            BatchNormalization(),
+            Dropout(0.3),
+            
+            Dense(128, activation='relu'),
+            BatchNormalization(),
+            Dropout(0.3),
+            
+            Dense(64, activation='relu'),
+            BatchNormalization(),
+            Dropout(0.2),
+            
+            Dense(32, activation='relu'),
+            BatchNormalization(),
+            Dropout(0.2),
+            Dense(16, activation='relu'),
+            BatchNormalization(),
+            Dense(1, activation='sigmoid')
+        ])
+
+        # Use learning rate scheduling
+        initial_learning_rate = 0.001
+        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+            initial_learning_rate,
+            decay_steps=1000,
+            decay_rate=0.9,
+            staircase=True)
+        
+        # Compile with better optimizer settings
+        model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=lr_schedule),
+            loss='binary_crossentropy',
+            metrics=['accuracy', tf.keras.metrics.AUC()]
+        )
+        
+        # Enhanced early stopping
+        early_stopping = EarlyStopping(
+            monitor='val_loss',
+            patience=15,
+            restore_best_weights=True,
+            min_delta=0.001
+        )
+        
+        # Add reduce LR on plateau
+        reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.2,
+            patience=5,
+            min_lr=0.00001
+        )
+        
+        # Train with better settings
+        history = model.fit(
+            self.X_train, self.y_train,
+            epochs=200,  # Increased epochs since we have early stopping
+            batch_size=64,  # Larger batch size
+            validation_split=0.2,
+            callbacks=[early_stopping, reduce_lr],
+            class_weight=self._compute_class_weights(),  # Add class weights
+            verbose=1
+        )
+        
+        # Plot training history
+        plt.figure(figsize=(12, 4))
+        
+        plt.subplot(1, 2, 1)
+        plt.plot(history.history['loss'], label='Training Loss')
+        plt.plot(history.history['val_loss'], label='Validation Loss')
+        plt.title('Model Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()
+        
+        plt.subplot(1, 2, 2)
+        plt.plot(history.history['accuracy'], label='Training Accuracy')
+        plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+        plt.title('Model Accuracy')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.legend()
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        plt.savefig(f'deep_learning_history_{timestamp}.png')
+        plt.close()
+        
+        # Evaluate
+        train_score = model.evaluate(self.X_train, self.y_train, verbose=0)[1]
+        test_score = model.evaluate(self.X_test, self.y_test, verbose=0)[1]
+        y_pred = (model.predict(self.X_test) > 0.5).astype(int)
+        
+        print("\nDeep Learning Results:")
+        print(f"Training accuracy: {train_score:.4f}")
+        print(f"Test accuracy: {test_score:.4f}")
+        print("\nClassification Report:")
+        print(classification_report(self.y_test, y_pred))
+        
+        # Save report
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        report = f"""Deep Learning Results:
+Training accuracy: {train_score:.4f}
+Test accuracy: {test_score:.4f}
+
+Classification Report:
+{classification_report(self.y_test, y_pred)}"""
+        
+        with open(f'deep_learning_report_{timestamp}.txt', 'w') as f:
+            f.write(report)
+            
+        # Save model
+        model.save(f'deep_learning_model_{timestamp}_{test_score:.4f}.h5')
+        
+        return model
+
 
 if __name__ == "__main__":
     trainer = TitanicModelTrainer('data/train_clean.csv')
     # # log_reg_model = trainer.train_logistic_regression()
     # decision_tree_model = trainer.train_decision_tree()
     # random_forest_model = trainer.train_random_forest()
-    xgboost_model = trainer.train_xgboost()
+    # xgboost_model = trainer.train_xgboost()
+    deep_learning_model = trainer.train_deep_learning()
