@@ -24,9 +24,16 @@ class Predictor:
         self.model_name = os.path.basename(model).split('.')[0].split('_')[0]
 
     def preprocess_data(self):
-        # Load and preprocess data
         df = pd.read_csv(self.data)
         X = self.preprocessor.fit_transform(df)
+        
+        # Handle missing values
+        if isinstance(self.model, dict) and 'X_train_stats' in self.model:
+            stats = self.model['X_train_stats']
+            X = X.fillna(stats['mean'])
+        else:
+            X = X.fillna(X.mean())  # Fallback to simple mean imputation
+        
         return X, df['PassengerId']
 
     def predict(self):
@@ -64,6 +71,6 @@ class Predictor:
 if __name__ == "__main__":
     data = 'data/test.csv'
     preprocessor = 'titanic_analyzer_20241205.joblib'
-    model = 'deep_result_3/deep_learning_model_20241205_101657_0.7933.h5'
+    model = 'result_3_addloss/logistic_regression_20241206_094609_0.8101.joblib'
     predictor = Predictor(data, preprocessor, model)
     predictor.predict()

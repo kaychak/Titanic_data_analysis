@@ -25,6 +25,9 @@ class TitanicModelTrainer:
         self.X = self.data.drop('Survived', axis=1)  # All columns except 'Survived'
         self.y = self.data['Survived']               # Only the 'Survived' column
         
+        # Add preprocessing
+        self.X = self.X.fillna(self.X.mean())  # Simple mean imputation
+        
         # Create train/test splits
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             self.X,                # Features
@@ -130,7 +133,12 @@ Classification Report:
             'model': model,
             'timestamp': timestamp,
             'test_accuracy': test_score,
-            'train_accuracy': train_score
+            'train_accuracy': train_score,
+            'feature_names': self.X.columns.tolist(),
+            'X_train_stats': {
+                'mean': self.X_train.mean(),
+                'std': self.X_train.std()
+            }
         }
         joblib.dump(model_info, f'logistic_regression_{timestamp}_{test_score:.4f}.joblib')
         
@@ -571,8 +579,8 @@ Classification Report:
 
 if __name__ == "__main__":
     trainer = TitanicModelTrainer('data/train_clean.csv')
-    # # log_reg_model = trainer.train_logistic_regression()
+    log_reg_model = trainer.train_logistic_regression()
     # decision_tree_model = trainer.train_decision_tree()
     # random_forest_model = trainer.train_random_forest()
     # xgboost_model = trainer.train_xgboost()
-    deep_learning_model = trainer.train_deep_learning()
+    # deep_learning_model = trainer.train_deep_learning()
