@@ -126,6 +126,14 @@ Classification Report:
         
         with open(f'logistic_regression_report_{timestamp}.txt', 'w') as f:
             f.write(report)
+            
+        # Plot feature importance
+        plt.figure(figsize=(10, 6))
+        importances = pd.Series(abs(model.coef_[0]), index=self.X.columns)
+        importances.sort_values().plot(kind='barh')
+        plt.title('Feature Importance (Logistic Regression)')
+        plt.savefig('logistic_regression_feature_importance.png')
+        plt.close()
         
         # Save model with timestamp and accuracy
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
