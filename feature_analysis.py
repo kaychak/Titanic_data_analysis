@@ -8,104 +8,66 @@ import io
 # Load cleaned data
 df = pd.read_csv('data/train_clean.csv')
 
-# Basic dataset info
-print("\n=== Cleaned Dataset Info ===")
-print(f"Dataset Shape: {df.shape}")
-print("\nMissing Values:")
-print(df.isnull().sum())
-print("\nDataset Structure:")
-print(df.info())
-
-# Feature Type Analysis
-print("\n=== Feature Analysis ===")
-
-# Numerical Features
-fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
-
-# Age Distribution
-sns.histplot(data=df, x='Age', bins=30, ax=ax1)
-ax1.set_title('Age Distribution (Cleaned)')
-
-# Fare Distribution  
-sns.histplot(data=df, x='Fare', bins=30, ax=ax2)
-ax2.set_title('Fare Distribution (Cleaned)')
-
-# Categorical Features
-sns.countplot(data=df, x='Sex', ax=ax3)
-ax3.set_title('Gender Distribution (Cleaned)')
-
-sns.countplot(data=df, x='Pclass', ax=ax4)
-ax4.set_title('Passenger Class Distribution (Cleaned)')
-
-plt.tight_layout()
-plt.savefig('cleaned_feature_distributions.png')
-plt.close()
-
-# Survival Analysis
-print("\n=== Survival Analysis ===")
-survival_rate = df['Survived'].mean()
-print(f"\nOverall Survival Rate: {survival_rate:.2%}")
-
-# Survival by Class
-class_survival = df.groupby('Pclass')['Survived'].mean()
-print("\nSurvival Rate by Class:")
-print(class_survival)
-
-# Survival by Gender
-gender_survival = df.groupby('Sex')['Survived'].mean()
-print("\nSurvival Rate by Gender:")
-print(gender_survival)
-
-# Age Group Analysis
-df['AgeGroup'] = pd.cut(df['Age'], bins=[0, 12, 18, 35, 50, 100], labels=['Child', 'Teen', 'Young Adult', 'Adult', 'Senior'])
-age_survival = df.groupby('AgeGroup')['Survived'].mean()
-print("\nSurvival Rate by Age Group:")
-print(age_survival)
+# Create unscaled version for comparison
+df_unscaled = df.copy()
+df_unscaled['Age'] = df['Age'] * df['Age'].std() + df['Age'].mean() 
+df_unscaled['Fare'] = df['Fare'] * df['Fare'].std() + df['Fare'].mean()
 
 # Correlation Matrix
-plt.figure(figsize=(10, 8))
+plt.figure(figsize=(12, 8))
 numeric_cols = df.select_dtypes(include=[np.number]).columns
 correlation_matrix = df[numeric_cols].corr()
-sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
-plt.title('Correlation Matrix of Numerical Features (Cleaned)')
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0, fmt='.2f')
+plt.title('Feature Correlations')
 plt.tight_layout()
-plt.savefig('cleaned_correlation_matrix.png')
+plt.savefig('correlation_matrix.png')
 plt.close()
 
-# Categorical Feature vs Survival
-fig, axes = plt.subplots(2, 2, figsize=(15, 10))
-axes = axes.ravel()
+# Feature Relationships with Survival
+# Box plots for numerical features
+fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+
+sns.boxplot(data=df, x='Survived', y='Age', ax=axes[0])
+axes[0].set_title('Age vs Survival')
+
+sns.boxplot(data=df, x='Survived', y='Fare', ax=axes[1])
+axes[1].set_title('Fare vs Survival')
+
+sns.boxplot(data=df, x='Survived', y='FamilySize', ax=axes[2])
+axes[2].set_title('Family Size vs Survival')
+
+plt.tight_layout()
+plt.savefig('numerical_vs_survival.png')
+plt.close()
+
+# Bar plots for categorical features
+fig, axes = plt.subplots(1, 3, figsize=(15, 5))
 
 sns.barplot(data=df, x='Pclass', y='Survived', ax=axes[0])
-axes[0].set_title('Survival Rate by Passenger Class (Cleaned)')
+axes[0].set_title('Survival Rate by Class')
 
 sns.barplot(data=df, x='Sex', y='Survived', ax=axes[1])
-axes[1].set_title('Survival Rate by Gender (Cleaned)')
+axes[1].set_title('Survival Rate by Gender')
 
-sns.barplot(data=df, x='AgeGroup', y='Survived', ax=axes[2])
-axes[2].set_title('Survival Rate by Age Group (Cleaned)')
-
-sns.boxplot(data=df, x='Survived', y='Fare', ax=axes[3])
-axes[3].set_title('Fare Distribution by Survival (Cleaned)')
+sns.barplot(data=df, x='Embarked', y='Survived', ax=axes[2])
+axes[2].set_title('Survival Rate by Port')
 
 plt.tight_layout()
-plt.savefig('cleaned_survival_analysis.png')
+plt.savefig('categorical_vs_survival.png')
 plt.close()
 
-# Statistical Tests
-print("\n=== Statistical Tests ===")
+# Feature Importance using Random Forest
+from sklearn.ensemble import RandomForestClassifier
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+rf.fit(df.drop('Survived', axis=1), df['Survived'])
 
-# Chi-square test for categorical variables
-def chi_square_test(feature):
-    contingency = pd.crosstab(df[feature], df['Survived'])
-    chi2, p_value = stats.chi2_contingency(contingency)[:2]
-    return feature, chi2, p_value
-
-categorical_features = ['Pclass', 'Sex', 'Embarked']
-print("\nChi-square tests for independence with survival:")
-for feature in categorical_features:
-    feature, chi2, p_value = chi_square_test(feature)
-    print(f"{feature}: chi2={chi2:.2f}, p-value={p_value:.4f}")
+plt.figure(figsize=(10, 6))
+importances = pd.Series(rf.feature_importances_, index=df.drop('Survived', axis=1).columns)
+importances.sort_values().plot(kind='barh')
+plt.title('Feature Importance')
+plt.tight_layout()
+plt.savefig('feature_importance.png')
+plt.close()
 
 # Save summary statistics
 with open('cleaned_eda_summary.txt', 'w') as f:
@@ -122,18 +84,27 @@ with open('cleaned_eda_summary.txt', 'w') as f:
     f.write(buffer.getvalue() + "\n")
     
     # Survival Analysis
+    survival_rate = df['Survived'].mean()
+    class_survival = df.groupby('Pclass')['Survived'].mean()
+    gender_survival = df.groupby('Sex')['Survived'].mean()
+    
     f.write("\n=== Survival Analysis ===\n")
     f.write(f"\nOverall Survival Rate: {survival_rate:.2%}\n")
     f.write("\nSurvival Rate by Class:\n")
     f.write(str(class_survival))
     f.write("\n\nGender-wise Survival Rates:\n")
     f.write(str(gender_survival))
-    f.write("\n\nAge Group Survival Rates:\n")
-    f.write(str(age_survival))
+    
+    # Define chi_square_test function before using it
+    def chi_square_test(feature):
+        contingency = pd.crosstab(df[feature], df['Survived'])
+        chi2, p_value, _, _ = stats.chi2_contingency(contingency)
+        return feature, chi2, p_value
     
     # Statistical Tests
     f.write("\n\n=== Statistical Tests ===\n")
     f.write("\nChi-square tests for independence with survival:\n")
+    categorical_features = ['Pclass', 'Sex', 'Embarked']
     for feature in categorical_features:
         feature, chi2, p_value = chi_square_test(feature)
         f.write(f"{feature}: chi2={chi2:.2f}, p-value={p_value:.4f}\n")
