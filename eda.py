@@ -16,101 +16,77 @@ print(df.isnull().sum())
 print("\nDataset Structure:")
 print(df.info())
 
-# Feature Type Analysis
-print("\n=== Feature Analysis ===")
+# 1. Missing Value Analysis
+plt.figure(figsize=(10, 6))
+missing_data = df.isnull().sum().sort_values(ascending=False)
+missing_percent = (missing_data / len(df) * 100).round(2)
 
-# Name/Title Analysis
-df['Title'] = df['Name'].str.extract(' ([A-Za-z]+)\.', expand=False)
-print("\nTitle Distribution:")
-print(df['Title'].value_counts())
-
-# Numerical Features
-fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
-
-# Age Distribution
-sns.histplot(data=df, x='Age', bins=30, ax=ax1)
-ax1.set_title('Age Distribution')
-
-# Fare Distribution
-sns.histplot(data=df, x='Fare', bins=30, ax=ax2)
-ax2.set_title('Fare Distribution')
-
-# Categorical Features
-sns.countplot(data=df, x='Sex', ax=ax3)
-ax3.set_title('Gender Distribution')
-
-sns.countplot(data=df, x='Pclass', ax=ax4)
-ax4.set_title('Passenger Class Distribution')
-
+sns.barplot(x=missing_percent.index, y=missing_percent.values)
+plt.title('Percentage of Missing Values by Feature')
+plt.xticks(rotation=45)
+plt.ylabel('Missing Percentage')
 plt.tight_layout()
-plt.savefig('feature_distributions.png')
+plt.savefig('missing_values.png')
 plt.close()
 
-# Survival Analysis
-print("\n=== Survival Analysis ===")
-survival_rate = df['Survived'].mean()
-print(f"\nOverall Survival Rate: {survival_rate:.2%}")
-
-# Survival by Class
-class_survival = df.groupby('Pclass')['Survived'].mean()
-print("\nSurvival Rate by Class:")
-print(class_survival)
-
-# Survival by Gender
-gender_survival = df.groupby('Sex')['Survived'].mean()
-print("\nSurvival Rate by Gender:")
-print(gender_survival)
-
-# Age Group Analysis
-df['AgeGroup'] = pd.cut(df['Age'], bins=[0, 12, 18, 35, 50, 100], labels=['Child', 'Teen', 'Young Adult', 'Adult', 'Senior'])
-age_survival = df.groupby('AgeGroup')['Survived'].mean()
-print("\nSurvival Rate by Age Group:")
-print(age_survival)
-
-# Correlation Matrix
-plt.figure(figsize=(10, 8))
-numeric_cols = df.select_dtypes(include=[np.number]).columns
-correlation_matrix = df[numeric_cols].corr()
-sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
-plt.title('Correlation Matrix of Numerical Features')
-plt.tight_layout()
-plt.savefig('correlation_matrix.png')
-plt.close()
-
-# Categorical Feature vs Survival
+# 2. Numerical Features Distribution
+numerical_features = ['Age', 'Fare', 'SibSp', 'Parch']
 fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 axes = axes.ravel()
 
-sns.barplot(data=df, x='Pclass', y='Survived', ax=axes[0])
-axes[0].set_title('Survival Rate by Passenger Class')
-
-sns.barplot(data=df, x='Sex', y='Survived', ax=axes[1])
-axes[1].set_title('Survival Rate by Gender')
-
-sns.barplot(data=df, x='AgeGroup', y='Survived', ax=axes[2])
-axes[2].set_title('Survival Rate by Age Group')
-
-sns.boxplot(data=df, x='Survived', y='Fare', ax=axes[3])
-axes[3].set_title('Fare Distribution by Survival')
+for idx, feature in enumerate(numerical_features):
+    # Histogram
+    sns.histplot(data=df, x=feature, bins=30, ax=axes[idx], kde=True)
+    axes[idx].set_title(f'{feature} Distribution')
+    
+    # Add boxplot as an inset
+    inset_ax = axes[idx].inset_axes([0.6, 0.6, 0.35, 0.35])
+    sns.boxplot(data=df, x=feature, ax=inset_ax)
+    inset_ax.set_title('Boxplot')
 
 plt.tight_layout()
-plt.savefig('survival_analysis.png')
+plt.savefig('numerical_distributions.png')
 plt.close()
 
-# Statistical Tests
-print("\n=== Statistical Tests ===")
+# 3. Categorical Features Distribution
+categorical_features = ['Pclass', 'Sex', 'Embarked', 'SibSp']
+fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+axes = axes.ravel()
 
-# Chi-square test for categorical variables
+for idx, feature in enumerate(categorical_features):
+    # Count plot
+    sns.countplot(data=df, x=feature, ax=axes[idx])
+    axes[idx].set_title(f'{feature} Distribution')
+    
+    # Add percentage labels
+    total = len(df[feature])
+    for p in axes[idx].patches:
+        percentage = f'{100 * p.get_height() / total:.1f}%'
+        x = p.get_x() + p.get_width() / 2
+        y = p.get_height()
+        axes[idx].annotate(percentage, (x, y), ha='center', va='bottom')
+
+plt.tight_layout()
+plt.savefig('categorical_distributions.png')
+plt.close()
+
+# Extract titles from Name column
+df['Title'] = df['Name'].str.extract(' ([A-Za-z]+)\.', expand=False)
+
+# Calculate survival statistics before writing to file
+survival_rate = df['Survived'].mean()
+class_survival = df.groupby('Pclass')['Survived'].mean()
+gender_survival = df.groupby('Sex')['Survived'].mean()
+
+# Create age groups and calculate survival rates
+df['AgeGroup'] = pd.cut(df['Age'], bins=[0, 12, 18, 35, 50, 100], labels=['Child', 'Teen', 'Young Adult', 'Adult', 'Senior'])
+age_survival = df.groupby('AgeGroup')['Survived'].mean()
+
+# Add this function before the statistical tests section
 def chi_square_test(feature):
     contingency = pd.crosstab(df[feature], df['Survived'])
-    chi2, p_value = stats.chi2_contingency(contingency)[:2]
+    chi2, p_value, _, _ = stats.chi2_contingency(contingency)
     return feature, chi2, p_value
-
-categorical_features = ['Pclass', 'Sex', 'Embarked']
-print("\nChi-square tests for independence with survival:")
-for feature in categorical_features:
-    feature, chi2, p_value = chi_square_test(feature)
-    print(f"{feature}: chi2={chi2:.2f}, p-value={p_value:.4f}")
 
 # Save summary statistics
 with open('eda_summary.txt', 'w') as f:
