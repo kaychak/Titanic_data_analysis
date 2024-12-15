@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, roc_auc_score, roc_curve
 import matplotlib.pyplot as plt
 from sklearn.model_selection import learning_curve
 import joblib
@@ -107,11 +107,29 @@ class TitanicModelTrainer:
         train_score = model.score(self.X_train, self.y_train)
         test_score = model.score(self.X_test, self.y_test)
         y_pred = model.predict(self.X_test)
+        y_pred_proba = model.predict_proba(self.X_test)[:, 1]
+        
+        # Calculate ROC AUC
+        roc_auc = roc_auc_score(self.y_test, y_pred_proba)
+        
+        # Plot ROC curve
+        fpr, tpr, _ = roc_curve(self.y_test, y_pred_proba)
+        plt.figure(figsize=(10, 6))
+        plt.plot(fpr, tpr, label=f'ROC curve (area = {roc_auc:.2f})')
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic (ROC) Curve')
+        plt.legend(loc='best')
+        plt.grid(True)
+        plt.savefig(f'logistic_regression_roc_curve_{timestamp}.png')
+        plt.close()
         
         # Print results
         print("\nLogistic Regression Results:")
         print(f"Training accuracy: {train_score:.4f}")
         print(f"Test accuracy: {test_score:.4f}")
+        print(f"ROC AUC: {roc_auc:.4f}")
         print("\nClassification Report:")
         print(classification_report(self.y_test, y_pred))
         
@@ -120,6 +138,7 @@ class TitanicModelTrainer:
         report = f"""Logistic Regression Results:
 Training accuracy: {train_score:.4f}
 Test accuracy: {test_score:.4f}
+ROC AUC: {roc_auc:.4f}
 
 Classification Report:
 {classification_report(self.y_test, y_pred)}"""
@@ -212,10 +231,28 @@ Classification Report:
         train_score = model.score(self.X_train, self.y_train)
         test_score = model.score(self.X_test, self.y_test)
         y_pred = model.predict(self.X_test)
+        y_pred_proba = model.predict_proba(self.X_test)[:, 1]
+        roc_auc = roc_auc_score(self.y_test, y_pred_proba)
+        
+        # Plot ROC curve
+        fpr, tpr, _ = roc_curve(self.y_test, y_pred_proba)
+        plt.figure(figsize=(10, 6))
+        plt.plot(fpr, tpr, label=f'ROC curve (area = {roc_auc:.4f})')
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic (Decision Tree)')
+        plt.legend(loc='lower right')
+        plt.grid(True)
+        plt.savefig(f'decision_tree_roc_curve_{timestamp}.png')
+        plt.close()
         
         print("\nDecision Tree Results:")
         print(f"Training accuracy: {train_score:.4f}")
         print(f"Test accuracy: {test_score:.4f}")
+        print(f"ROC AUC: {roc_auc:.4f}")
         print("\nClassification Report:")
         print(classification_report(self.y_test, y_pred))
         
@@ -224,6 +261,7 @@ Classification Report:
         report = f"""Decision Tree Results:
 Training accuracy: {train_score:.4f}
 Test accuracy: {test_score:.4f}
+ROC AUC: {roc_auc:.4f}
 
 Classification Report:
 {classification_report(self.y_test, y_pred)}"""
@@ -312,9 +350,29 @@ Classification Report:
         test_score = model.score(self.X_test, self.y_test)
         y_pred = model.predict(self.X_test)
         
+        # Calculate ROC AUC
+        y_pred_proba = model.predict_proba(self.X_test)[:, 1]
+        roc_auc = roc_auc_score(self.y_test, y_pred_proba)
+        
+        # Plot ROC curve
+        fpr, tpr, _ = roc_curve(self.y_test, y_pred_proba)
+        plt.figure(figsize=(10, 6))
+        plt.plot(fpr, tpr, label=f'ROC curve (area = {roc_auc:.4f})')
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic (Random Forest)')
+        plt.legend(loc='lower right')
+        plt.grid(True)
+        plt.savefig(f'random_forest_roc_curve_{timestamp}.png')
+        plt.close()
+        
         print("\nRandom Forest Results:")
         print(f"Training accuracy: {train_score:.4f}")
         print(f"Test accuracy: {test_score:.4f}")
+        print(f"ROC AUC: {roc_auc:.4f}")
         print("\nClassification Report:")
         print(classification_report(self.y_test, y_pred))
         
@@ -323,6 +381,7 @@ Classification Report:
         report = f"""Random Forest Results:
 Training accuracy: {train_score:.4f}
 Test accuracy: {test_score:.4f}
+ROC AUC: {roc_auc:.4f}
 
 Classification Report:
 {classification_report(self.y_test, y_pred)}"""
@@ -426,10 +485,28 @@ Classification Report:
         train_score = final_model.score(self.X_train, self.y_train)
         test_score = final_model.score(self.X_test, self.y_test)
         y_pred = final_model.predict(self.X_test)
+        y_pred_proba = final_model.predict_proba(self.X_test)[:, 1]
+        roc_auc = roc_auc_score(self.y_test, y_pred_proba)
+        
+        # Plot ROC curve
+        fpr, tpr, _ = roc_curve(self.y_test, y_pred_proba)
+        plt.figure(figsize=(10, 6))
+        plt.plot(fpr, tpr, label=f'ROC curve (area = {roc_auc:.4f})')
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic (XGBoost)')
+        plt.legend(loc='lower right')
+        plt.grid(True)
+        plt.savefig(f'xgboost_roc_curve_{timestamp}.png')
+        plt.close()
         
         print("\nXGBoost Results:")
         print(f"Training accuracy: {train_score:.4f}")
         print(f"Test accuracy: {test_score:.4f}")
+        print(f"ROC AUC: {roc_auc:.4f}")
         print(f"Best iteration found: {best_iteration}")
         print("\nClassification Report:")
         print(classification_report(self.y_test, y_pred))
@@ -439,6 +516,7 @@ Classification Report:
         report = f"""XGBoost Results:
 Training accuracy: {train_score:.4f}
 Test accuracy: {test_score:.4f}
+ROC AUC: {roc_auc:.4f}
 Best iteration: {best_iteration}
 
 Classification Report:
@@ -462,6 +540,7 @@ Classification Report:
             'timestamp': timestamp,
             'test_accuracy': test_score,
             'train_accuracy': train_score,
+            'roc_auc': roc_auc,
             'best_iteration': best_iteration
         }
         joblib.dump(model_info, f'xgboost_{timestamp}_{test_score:.4f}.joblib')
@@ -559,19 +638,38 @@ Classification Report:
         # Evaluate
         train_score = model.evaluate(self.X_train, self.y_train, verbose=0)[1]
         test_score = model.evaluate(self.X_test, self.y_test, verbose=0)[1]
-        y_pred = (model.predict(self.X_test) > 0.5).astype(int)
+        y_pred_prob = model.predict(self.X_test)
+        y_pred = (y_pred_prob > 0.5).astype(int)
+        
+        # Calculate ROC AUC
+        roc_auc = roc_auc_score(self.y_test, y_pred_prob)
+        
+        # Plot ROC curve
+        fpr, tpr, _ = roc_curve(self.y_test, y_pred_prob)
+        plt.figure()
+        plt.plot(fpr, tpr, label=f'ROC curve (area = {roc_auc:.2f})')
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic')
+        plt.legend(loc='lower right')
+        plt.savefig(f'deep_learning_roc_curve_{timestamp}.png')
+        plt.close()
         
         print("\nDeep Learning Results:")
         print(f"Training accuracy: {train_score:.4f}")
         print(f"Test accuracy: {test_score:.4f}")
+        print(f"ROC AUC: {roc_auc:.4f}")
         print("\nClassification Report:")
         print(classification_report(self.y_test, y_pred))
         
         # Save report
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         report = f"""Deep Learning Results:
 Training accuracy: {train_score:.4f}
 Test accuracy: {test_score:.4f}
+ROC AUC: {roc_auc:.4f}
 
 Classification Report:
 {classification_report(self.y_test, y_pred)}"""
@@ -587,7 +685,7 @@ Classification Report:
 
 if __name__ == "__main__":
     trainer = TitanicModelTrainer('data/train_clean.csv')
-    log_reg_model = trainer.train_logistic_regression()
+    # log_reg_model = trainer.train_logistic_regression()
     # decision_tree_model = trainer.train_decision_tree()
     # random_forest_model = trainer.train_random_forest()
     # xgboost_model = trainer.train_xgboost()
