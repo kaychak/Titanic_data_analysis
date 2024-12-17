@@ -48,23 +48,25 @@ plt.tight_layout()
 plt.savefig('numerical_distributions.png')
 plt.close()
 
+# Create age groups before categorical analysis
+df['AgeGroup'] = pd.cut(df['Age'], bins=[0, 12, 18, 35, 50, 100], labels=['Child', 'Teen', 'Young Adult', 'Adult', 'Senior'])
+
 # 3. Categorical Features Distribution
-categorical_features = ['Pclass', 'Sex', 'Embarked', 'SibSp']
+categorical_features = ['Pclass', 'Sex', 'Embarked', 'AgeGroup']
 fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 axes = axes.ravel()
 
+# Plot survival rates for all categorical features
 for idx, feature in enumerate(categorical_features):
-    # Count plot
-    sns.countplot(data=df, x=feature, ax=axes[idx])
-    axes[idx].set_title(f'{feature} Distribution')
-    
-    # Add percentage labels
-    total = len(df[feature])
-    for p in axes[idx].patches:
-        percentage = f'{100 * p.get_height() / total:.1f}%'
-        x = p.get_x() + p.get_width() / 2
-        y = p.get_height()
-        axes[idx].annotate(percentage, (x, y), ha='center', va='bottom')
+    survival_rates = df.groupby(feature)['Survived'].value_counts(normalize=True).unstack()
+    survival_rates.plot(kind='bar', ax=axes[idx], color=['#1f77b4', '#ff7f0e'])
+    axes[idx].set_title(f'Survival Rates by {feature}')
+    axes[idx].set_xlabel(feature)
+    axes[idx].set_ylabel('Proportion')
+    axes[idx].set_ylim(0, 1.0)
+    axes[idx].legend(['Not Survived', 'Survived'])
+    for container in axes[idx].containers:
+        axes[idx].bar_label(container, fmt='%.2f')
 
 plt.tight_layout()
 plt.savefig('categorical_distributions.png')
