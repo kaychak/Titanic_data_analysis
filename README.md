@@ -50,7 +50,7 @@ cleaned_data = analyzer.clean_data()
 
 2. Feature Analysis:
 ```python
-# Run feature_analysis.py to generate visualizations and analysis
+# Run feature_analyse.py to generate visualizations and analysis
 ```
 
 3. Train Models:
