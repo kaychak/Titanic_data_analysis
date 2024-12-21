@@ -5,8 +5,8 @@ A machine learning project to predict passenger survival on the Titanic using mu
 ## Project Structure
 
 - `eda.py`: Exploratory data analysis
-- `data_analyse.py`: Data preprocessing and cleaning pipeline
-- `feature_analyse.py`: Feature engineering and visualization
+- `data_analysis.py`: Data preprocessing and cleaning pipeline
+- `feature_analysis.py`: Feature engineering and visualization
 - `train_models.py`: Model training for logistic regression, decision tree, random forest, xgboost(with early stopping)
 - `train_nostop.py`: Model training without early stopping for xgboost
 - `predict.py`: Model prediction pipeline
@@ -50,7 +50,7 @@ cleaned_data = analyzer.clean_data()
 
 2. Feature Analysis:
 ```python
-# Run feature_analyse.py to generate visualizations and analysis
+# Run feature_analysis.py to generate visualizations and analysis
 ```
 
 3. Train Models:

@@ -3,7 +3,7 @@ import joblib
 from datetime import datetime
 import os
 from keras.models import load_model
-from data_analyse import TitanicAnalyzer
+from data_analysis import TitanicAnalyzer
 
 class Predictor:
     def __init__(self, data, preprocessor, model):
