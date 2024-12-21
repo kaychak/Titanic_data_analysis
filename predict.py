@@ -3,7 +3,7 @@ import joblib
 from datetime import datetime
 import os
 from keras.models import load_model
-from data_analyze import TitanicAnalyzer
+from data_analyse import TitanicAnalyzer
 
 class Predictor:
     def __init__(self, data, preprocessor, model):
@@ -71,6 +71,6 @@ class Predictor:
 if __name__ == "__main__":
     data = 'data/test.csv'
     preprocessor = 'titanic_analyzer_20241205.joblib'
-    model = 'result_3_addloss/logistic_regression_20241206_094609_0.8101.joblib'
+    model = 'result_will_use/result_earlystop/xgboost_20241204_232047_0.8101.joblib'
     predictor = Predictor(data, preprocessor, model)
     predictor.predict()
